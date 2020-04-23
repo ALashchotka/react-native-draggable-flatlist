@@ -753,7 +753,9 @@ class DraggableFlatList<T> extends React.Component<Props<T>, State> {
               )
             ]
           ),
-          call([nativeEvent], this.props.onGestureEvent)
+          call([this.touchAbsolute], nativeEvent =>
+            this.props.onGestureEvent(nativeEvent)
+          )
         ])
     }
   ]);
