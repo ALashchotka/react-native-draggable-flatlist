@@ -735,26 +735,23 @@ class DraggableFlatList<T> extends React.Component<Props<T>, State> {
   onPanGestureEvent = event([
     {
       nativeEvent: (nativeEvent: PanGestureHandlerEventExtra) =>
-        block([
-          cond(
-            and(
-              this.isHovering,
-              eq(this.panGestureState, GestureState.ACTIVE),
-              not(this.disabled)
-            ),
-            [
-              cond(not(this.hasMoved), set(this.hasMoved, 1)),
-              set(
-                this.touchAbsolute,
-                add(
-                  this.props.horizontal ? nativeEvent.x : nativeEvent.y,
-                  this.activationDistance
-                )
-              )
-            ]
+        cond(
+          and(
+            this.isHovering,
+            eq(this.panGestureState, GestureState.ACTIVE),
+            not(this.disabled)
           ),
-          call([this.touchAbsolute], this.props.onGestureEvent)
-        ])
+          [
+            cond(not(this.hasMoved), set(this.hasMoved, 1)),
+            set(
+              this.touchAbsolute,
+              add(
+                this.props.horizontal ? nativeEvent.x : nativeEvent.y,
+                this.activationDistance
+              )
+            )
+          ]
+        )
     }
   ]);
 
@@ -873,7 +870,8 @@ class DraggableFlatList<T> extends React.Component<Props<T>, State> {
       debug,
       horizontal,
       activationDistance,
-      onScrollOffsetChange
+      onScrollOffsetChange,
+      onGestureEvent
     } = this.props;
     const { hoverComponent } = this.state;
     let dynamicProps = {};
@@ -933,6 +931,18 @@ class DraggableFlatList<T> extends React.Component<Props<T>, State> {
               ])
             }
           </Animated.Code>
+          {onGestureEvent && (
+            <Animated.Code>
+              {() =>
+                onChange(
+                  this.touchAbsolute,
+                  call([this.touchAbsolute], ([offset]) =>
+                    onGestureEvent(offset)
+                  )
+                )
+              }
+            </Animated.Code>
+          )}
           {onScrollOffsetChange && (
             <Animated.Code>
               {() =>
