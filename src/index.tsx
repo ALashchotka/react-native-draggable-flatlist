@@ -101,7 +101,7 @@ type Props<T> = Modify<
     data: T[];
     onRef?: (ref: React.RefObject<AnimatedFlatListType<T>>) => void;
     onDragBegin?: (index: number) => void;
-    onGestureEvent?: (event: any) => void;
+    onGestureEvent: (event: any) => void;
     onRelease?: (index: number) => void;
     onDragEnd?: (params: DragEndParams<T>) => void;
     renderItem: (params: RenderItemParams<T>) => React.ReactNode;
@@ -734,21 +734,27 @@ class DraggableFlatList<T> extends React.Component<Props<T>, State> {
 
   onPanGestureEvent = event([
     {
-      nativeEvent: ({ x, y }: PanGestureHandlerEventExtra) =>
-        cond(
-          and(
-            this.isHovering,
-            eq(this.panGestureState, GestureState.ACTIVE),
-            not(this.disabled)
+      nativeEvent: (nativeEvent: PanGestureHandlerEventExtra) =>
+        block([
+          cond(
+            and(
+              this.isHovering,
+              eq(this.panGestureState, GestureState.ACTIVE),
+              not(this.disabled)
+            ),
+            [
+              cond(not(this.hasMoved), set(this.hasMoved, 1)),
+              set(
+                this.touchAbsolute,
+                add(
+                  this.props.horizontal ? nativeEvent.x : nativeEvent.y,
+                  this.activationDistance
+                )
+              )
+            ]
           ),
-          [
-            cond(not(this.hasMoved), set(this.hasMoved, 1)),
-            set(
-              this.touchAbsolute,
-              add(this.props.horizontal ? x : y, this.activationDistance)
-            )
-          ]
-        )
+          call([nativeEvent], this.props.onGestureEvent)
+        ])
     }
   ]);
 
@@ -867,8 +873,7 @@ class DraggableFlatList<T> extends React.Component<Props<T>, State> {
       debug,
       horizontal,
       activationDistance,
-      onScrollOffsetChange,
-      onGestureEvent
+      onScrollOffsetChange
     } = this.props;
     const { hoverComponent } = this.state;
     let dynamicProps = {};
@@ -881,13 +886,7 @@ class DraggableFlatList<T> extends React.Component<Props<T>, State> {
     return (
       <PanGestureHandler
         ref={this.panGestureHandlerRef}
-        onGestureEvent={event => {
-          this.onPanGestureEvent(event);
-
-          if (onGestureEvent) {
-            onGestureEvent(event);
-          }
-        }}
+        onGestureEvent={this.onPanGestureEvent}
         onHandlerStateChange={this.onPanStateChange}
         {...dynamicProps}
       >
